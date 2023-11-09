@@ -30,12 +30,34 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO", "/dev/null", "http://localhost:5000"]
-    
-  datapusher:
-    image: ckan/ckan-base-datapusher:${DATAPUSHER_VERSION}
+
+  datapusher-plus:
+    container_name: datapusher-plus
+    platform: linux/arm64/v8
+    build:
+      context: ./datapusher-plus
+      dockerfile: Dockerfile
+      args:
+        - ARCHITECTURE=${DATAPUSHER_ARCHITECTURE}
+    ports:
+      - "8800:8800"
+    links:
+      - ckan-dev
+      - db
+    depends_on:
+      - db
+      - ckan-dev
+    environment:
+      - DATASTORE_DB
+      - DATAPUSHER_PASSWORD
+      - DATAPUSHER_JOBS_PASSWORD
+      - SQLALCHEMY_DATABASE_URI=postgresql://datapusher_jobs:${DATAPUSHER_JOBS_PASSWORD}@db/datapusher_jobs
+      - WRITE_ENGINE_URL="postgresql://datapusher:${DATAPUSHER_PASSWORD}@db/${DATASTORE_DB}"
+    env_file:
+      - ./datapusher-plus/.env
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO", "/dev/null", "http://localhost:8800"]
+      test: [ "CMD", "wget", "-qO", "/dev/null", "http://localhost:8800" ]
 
   db:
     build:
@@ -50,8 +72,12 @@ services:
       - DATASTORE_READONLY_USER
       - DATASTORE_READONLY_PASSWORD
       - DATASTORE_DB
+      - DATAPUSHER_PASSWORD
+      - DATAPUSHER_JOBS_PASSWORD
     volumes:
       - pg_data:/var/lib/postgresql/data
+    ports:
+      - "0.0.0.0:${DB_PORT_HOST}:5432"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]

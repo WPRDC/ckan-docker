@@ -60,3 +60,8 @@ RUN for d in $APP_DIR/patches/*; do \
             done ; \
         fi ; \
     done
+
+# Override prerun and start up
+COPY setup/prerun.py.override ${APP_DIR}/prerun.py
+COPY setup/supervisor.worker.conf /etc/supervisord.d/worker.conf
+

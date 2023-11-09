@@ -157,6 +157,29 @@ def init_datastore_db():
         connection.close()
 
 
+def init_datastore_postgis():
+    conn_str = os.environ.get("CKAN_DATASTORE_SUPERUSER_URL")
+    if not conn_str:
+        print("[prerun] Skipping datastore PostGIS initialization")
+        return
+    connection = psycopg2.connect(conn_str)
+    cursor = connection.cursor()
+
+    print("[prerun] Initializing datastore PostGIS - start")
+    try:
+        cursor.execute("CREATE EXTENSION postgis;")
+        for notice in connection.notices:
+            print(notice)
+        connection.commit()
+        print("[prerun] Initializing datastore PostGIS - end")
+
+    except psycopg2.Error as e:
+        print("[prerun] Could not initialize datastore PostGIS")
+        print(str(e))
+    finally:
+        cursor.close()
+        connection.close()
+
 def create_sysadmin():
 
     name = os.environ.get("CKAN_SYSADMIN_NAME")
@@ -194,6 +217,14 @@ def create_sysadmin():
         subprocess.call(command)
         print("[prerun] Made user {0} a sysadmin".format(name))
 
+        # cleanup permissions
+        # We're running as root before pivoting to uwsgi and dropping privs
+        data_dir = "%s/storage" % os.environ['CKAN_STORAGE_PATH']
+
+        command = ["chown", "-R", "ckan:ckan", data_dir]
+        subprocess.call(command)
+        print("[prerun] Ensured storage directory is owned by ckan")
+
 
 if __name__ == "__main__":
 
@@ -207,6 +238,7 @@ if __name__ == "__main__":
         update_plugins()
         check_datastore_db_connection()
         init_datastore_db()
+        init_datastore_postgis()
         check_solr_connection()
         create_sysadmin()
         
