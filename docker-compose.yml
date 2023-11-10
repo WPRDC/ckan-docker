@@ -100,7 +100,19 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "-e", "QUIT"]
-    
+
+  tiles:
+    image: ghcr.io/maplibre/martin:v0.10.0
+    platform: linux/x86_64
+    restart: unless-stopped
+    networks:
+      - dbnet
+    ports:
+      - "3001:3000"
+    environment:
+      - "DATABASE_URL=${CKAN_DATASTORE_READ_URL}"
+      - RUST_LOG=actix_web=info,martin=debug,tokio_postgres=debug
+
 networks:
   webnet:
   ckannet:

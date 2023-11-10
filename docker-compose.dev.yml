@@ -51,8 +51,6 @@ services:
       - DATASTORE_DB
       - DATAPUSHER_PASSWORD
       - DATAPUSHER_JOBS_PASSWORD
-      - SQLALCHEMY_DATABASE_URI=postgresql://datapusher_jobs:${DATAPUSHER_JOBS_PASSWORD}@db/datapusher_jobs
-      - WRITE_ENGINE_URL="postgresql://datapusher:${DATAPUSHER_PASSWORD}@db/${DATASTORE_DB}"
     env_file:
       - ./datapusher-plus/.env
     restart: unless-stopped
@@ -76,6 +74,7 @@ services:
       - DATAPUSHER_JOBS_PASSWORD
     volumes:
       - pg_data:/var/lib/postgresql/data
+    shm_size: 12g
     ports:
       - "0.0.0.0:${DB_PORT_HOST}:5432"
     restart: unless-stopped
@@ -95,3 +94,17 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "-e", "QUIT"]
+
+  tiles:
+    build:
+      context: martin/
+    platform: linux/x86_64
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - "DATABASE_URL=${CKAN_DATASTORE_READ_URL}"
+      - RUST_LOG=actix_web=info,martin=debug,tokio_postgres=debug

@@ -8,7 +8,7 @@ ENV ARCH=$ARCHITECTURE
 
 # Version Numbers
 ENV QSV_VERSION="0.118.0"
-ENV DPP_VERSION="master"
+ENV DPP_VERSION="0.15.0"
 
 # Set timezone
 ENV TZ="America/New_York"
@@ -65,6 +65,18 @@ RUN ${VENV}/bin/pip install uwsgi python-dateutil
 
 #INSTALL DATAPUSHER-PLUS FROM SOURCE REPO
 RUN git clone --branch ${DPP_VERSION} https://github.com/datHere/datapusher-plus
+
+# APPLY PATCHES
+COPY patches ${SRC_DIR}/patches
+
+RUN for d in $SRC_DIR/patches/*; do \
+        if [ -d $d ]; then \
+            for f in `ls $d/*.patch | sort -g`; do \
+                cd $SRC_DIR/`basename "$d"` && echo "$0: Applying patch $f to $SRC_DIR/`basename $d`"; patch -p1 < "$f" ; \
+            done ; \
+        fi ; \
+    done
+
 
 RUN cd ${SRC_DIR}/datapusher-plus && \
    ${VENV}/bin/pip install -r requirements-dev.txt && \
