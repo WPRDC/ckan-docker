@@ -8,20 +8,6 @@ volumes:
 
 services:
 
-  nginx:
-    container_name: ${NGINX_CONTAINER_NAME}
-    build:
-      context: nginx/
-      dockerfile: Dockerfile
-    networks:
-      - webnet
-      - ckannet
-    depends_on:
-      ckan:
-        condition: service_healthy
-    ports:
-      - "0.0.0.0:${NGINX_SSLPORT_HOST}:${NGINX_SSLPORT}"
-    
   ckan:
     container_name: ${CKAN_CONTAINER_NAME}
     build:
@@ -31,7 +17,6 @@ services:
         - TZ=${TZ}
     networks:
       - ckannet
-      - dbnet
       - solrnet
       - redisnet
     env_file:
@@ -49,38 +34,34 @@ services:
     healthcheck:
       test: ["CMD", "wget", "-qO", "/dev/null", "http://localhost:5000"]
     
-  datapusher:
-    container_name: ${DATAPUSHER_CONTAINER_NAME}
+  datapusher-plus:
+    container_name: datapusher-plus
+    platform: linux/arm64/v8
+    build:
+      context: ./datapusher-plus
+      dockerfile: Dockerfile
+      args:
+        - ARCHITECTURE=${DATAPUSHER_ARCHITECTURE}
+    ports:
+      - "8800:8800"
     networks:
       - ckannet
-      - dbnet
-    image: ckan/ckan-base-datapusher:${DATAPUSHER_VERSION}
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "-qO", "/dev/null", "http://localhost:8800"]
-
-  db:
-    container_name: ${POSTGRESQL_CONTAINER_NAME}
-    build:
-      context: postgresql/
-    networks:
-      - dbnet
+    links:
+      - ckan-dev
+      - db
+    depends_on:
+      - db
+      - ckan-dev
     environment:
-      - POSTGRES_USER
-      - POSTGRES_PASSWORD
-      - POSTGRES_DB
-      - CKAN_DB_USER
-      - CKAN_DB_PASSWORD
-      - CKAN_DB
-      - DATASTORE_READONLY_USER
-      - DATASTORE_READONLY_PASSWORD
       - DATASTORE_DB
-    volumes:
-      - pg_data:/var/lib/postgresql/data
+      - DATAPUSHER_PASSWORD
+      - DATAPUSHER_JOBS_PASSWORD
+    env_file:
+      - ./datapusher-plus/.env
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
-     
+      test: [ "CMD", "wget", "-qO", "/dev/null", "http://localhost:8800" ]
+
   solr:
     container_name: ${SOLR_CONTAINER_NAME}
     networks:
@@ -102,23 +83,21 @@ services:
       test: ["CMD", "redis-cli", "-e", "QUIT"]
 
   tiles:
-    image: ghcr.io/maplibre/martin:v0.10.0
+    build:
+      context: martin/
     platform: linux/x86_64
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
-    networks:
-      - dbnet
     ports:
       - "3001:3000"
     environment:
       - "DATABASE_URL=${CKAN_DATASTORE_READ_URL}"
-      - RUST_LOG=actix_web=info,martin=debug,tokio_postgres=debug
 
 networks:
-  webnet:
   ckannet:
   solrnet:
-    internal: true
-  dbnet:
     internal: true
   redisnet:
     internal: true
