@@ -22,35 +22,28 @@ services:
     env_file:
       - .env
     depends_on:
-      db:
-        condition: service_healthy
       solr:
         condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
-      - ckan_storage:/var/lib/ckan
+      - /data/ckan:/var/lib/ckan
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO", "/dev/null", "http://localhost:5000"]
     
   datapusher-plus:
     container_name: datapusher-plus
-    platform: linux/arm64/v8
     build:
       context: ./datapusher-plus
       dockerfile: Dockerfile
-      args:
-        - ARCHITECTURE=${DATAPUSHER_ARCHITECTURE}
     ports:
       - "8800:8800"
     networks:
       - ckannet
     links:
       - ckan-dev
-      - db
     depends_on:
-      - db
       - ckan-dev
     environment:
       - DATASTORE_DB
@@ -86,6 +79,8 @@ services:
     build:
       context: martin/
     platform: linux/x86_64
+    networks:
+      - ckannet
     depends_on:
       db:
         condition: service_healthy
