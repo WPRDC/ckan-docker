@@ -76,6 +76,7 @@ services:
       test: ["CMD", "redis-cli", "-e", "QUIT"]
 
   tiles:
+    container_name: ${MARTIN_CONTAINER_NAME}
     build:
       context: martin/
     platform: linux/x86_64
