@@ -26,6 +26,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    ports:
+      - "0.0.0.0:${CKAN_PORT_HOST}:${CKAN_PORT}"
     volumes:
       - /data/ckan:/var/lib/ckan
     restart: unless-stopped
@@ -42,9 +44,9 @@ services:
     networks:
       - ckannet
     links:
-      - ckan-dev
+      - ckan
     depends_on:
-      - ckan-dev
+      - ckan
     environment:
       - DATASTORE_DB
       - DATAPUSHER_PASSWORD
@@ -86,9 +88,11 @@ services:
         condition: service_healthy
     restart: unless-stopped
     ports:
-      - "3001:3000"
+      - "3030:3000"
     environment:
       - "DATABASE_URL=${CKAN_DATASTORE_READ_URL}"
+    healthcheck:
+      test: [ "CMD", "wget", "-qO", "/dev/null", "http://localhost:3000/solr/" ]
 
 networks:
   ckannet:
