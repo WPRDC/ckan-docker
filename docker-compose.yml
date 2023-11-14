@@ -33,7 +33,7 @@ services:
       test: ["CMD", "wget", "-qO", "/dev/null", "http://localhost:5000"]
     
   datapusher-plus:
-    container_name: datapusher-plus
+    container_name: ${DATAPUSHER_CONTAINER_NAME}
     build:
       context: ./datapusher-plus
       dockerfile: Dockerfile
