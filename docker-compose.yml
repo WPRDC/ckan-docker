@@ -2,8 +2,6 @@ version: "3"
 
 
 volumes:
-  ckan_storage:
-  pg_data:
   solr_data:
 
 services:
@@ -40,7 +38,7 @@ services:
       context: ./datapusher-plus
       dockerfile: Dockerfile
     ports:
-      - "8800:8800"
+      - "0.0.0.0:${DATAPUSHER_PORT_HOST}:8800"
     networks:
       - ckannet
     links:
@@ -88,7 +86,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     ports:
-      - "3030:3000"
+      - "0.0.0.0:${MARTIN_PORT_HOST}:3000"
     environment:
       - "DATABASE_URL=${CKAN_DATASTORE_READ_URL}"
     healthcheck:
