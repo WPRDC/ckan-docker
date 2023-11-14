@@ -81,9 +81,6 @@ services:
     platform: linux/x86_64
     networks:
       - ckannet
-    depends_on:
-      db:
-        condition: service_healthy
     restart: unless-stopped
     ports:
       - "0.0.0.0:${MARTIN_PORT_HOST}:3000"
