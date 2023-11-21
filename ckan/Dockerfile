@@ -39,12 +39,14 @@ RUN pip3 install -e git+https://github.com/ckan/ckanext-report.git#egg=ckanext-r
 
 ### Fluent ###
 RUN pip3 install -e git+https://github.com/ckan/ckanext-fluent.git#egg=ckanext-fluent && \
-    pip3 install -r ${APP_DIR}/src/ckanext-fluent/requirements.txt
+    pip3 install -r ${APP_DIR}/src/ckanext-fluent/requirements.txt \
+
+### OData ###
+RUN pip install -e git+https://github.com/jqnatividad/ckanext-odata.git#egg=ckanext-odata
 
 ### Dataspatial ###
 RUN pip install -e git+https://github.com/wprdc/ckanext-dataspatial.git#egg=ckanext-dataspatial && \
-        pip3 install -r ${APP_DIR}/src/ckanext-dataspatial/requirements.txt
-
+    pip3 install -r ${APP_DIR}/src/ckanext-dataspatial/requirements.txt
 
 # Install Theme
 RUN pip install -e git+https://github.com/wprdc/ckanext-wprdctheme.git#egg=ckanext-wprdctheme

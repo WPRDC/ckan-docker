@@ -46,6 +46,16 @@ RUN pip3 install -e git+https://github.com/ckan/ckanext-report.git#egg=ckanext-r
 RUN pip3 install -e git+https://github.com/ckan/ckanext-fluent.git#egg=ckanext-fluent && \
     pip3 install -r ${APP_DIR}/src/ckanext-fluent/requirements.txt
 
+### OData ###
+RUN pip install -e git+https://github.com/jqnatividad/ckanext-odata.git#egg=ckanext-odata
+
+#### Dataspatial ###
+# Uncomment this if you both
+#    1. need ckanext-dataspatial in dev and
+#    2. are not developing dataspatial and loading it from src
+#RUN pip install -e git+https://github.com/wprdc/ckanext-dataspatial.git#egg=ckanext-dataspatial && \
+#    pip3 install -r ${APP_DIR}/src/ckanext-dataspatial/requirements.txt
+
 # Copy custom initialization scripts
 COPY docker-entrypoint.d/* /docker-entrypoint.d/
 
