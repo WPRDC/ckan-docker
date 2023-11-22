@@ -31,8 +31,7 @@ RUN pip3 install -e git+https://github.com/jqnatividad/ckanext-officedocs.git#eg
 RUN pip3 install -e git+https://github.com/OpenGov-OpenData/ckanext-featuredviews.git#egg=ckanext-featuredviews
 
 ### DataJSON ###
-### TODO: fork this repo and update it to work with 2.10
-RUN pip3 install -e git+https://github.com/GSA/ckanext-datajson.git#egg=ckanext-datajson && \
+RUN pip3 install -e git+https://github.com/WPRDC/ckanext-datajson.git#egg=ckanext-datajson && \
     pip3 install -r ${APP_DIR}/src/ckanext-datajson/requirements.txt
 
 ### Report ###
