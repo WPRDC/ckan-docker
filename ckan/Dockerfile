@@ -14,6 +14,7 @@ RUN pip3 install -e 'git+https://github.com/ckan/ckanext-harvest.git@master#egg=
 ### Hierarchy ###
 RUN pip3 install -e "git+https://github.com/davidread/ckanext-hierarchy.git#egg=ckanext-hierarchy" && \
     pip3 install -r ${APP_DIR}/src/ckanext-hierarchy/requirements.txt
+
 ### Scheming ###
 RUN  pip3 install -e 'git+https://github.com/ckan/ckanext-scheming.git@master#egg=ckanext-scheming'
 
@@ -39,7 +40,7 @@ RUN pip3 install -e git+https://github.com/ckan/ckanext-report.git#egg=ckanext-r
 
 ### Fluent ###
 RUN pip3 install -e git+https://github.com/ckan/ckanext-fluent.git#egg=ckanext-fluent && \
-    pip3 install -r ${APP_DIR}/src/ckanext-fluent/requirements.txt \
+    pip3 install -r ${APP_DIR}/src/ckanext-fluent/requirements.txt
 
 ### OData ###
 RUN pip install -e git+https://github.com/WPRDC/ckanext-odata.git#egg=ckanext-odata
