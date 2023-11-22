@@ -42,14 +42,14 @@ RUN pip3 install -e git+https://github.com/ckan/ckanext-fluent.git#egg=ckanext-f
     pip3 install -r ${APP_DIR}/src/ckanext-fluent/requirements.txt \
 
 ### OData ###
-RUN pip install -e git+https://github.com/jqnatividad/ckanext-odata.git#egg=ckanext-odata
+RUN pip install -e git+https://github.com/WPRDC/ckanext-odata.git#egg=ckanext-odata
 
 ### Dataspatial ###
-RUN pip install -e git+https://github.com/wprdc/ckanext-dataspatial.git#egg=ckanext-dataspatial && \
+RUN pip install -e git+https://github.com/WPRDC/ckanext-dataspatial.git#egg=ckanext-dataspatial && \
     pip3 install -r ${APP_DIR}/src/ckanext-dataspatial/requirements.txt
 
 # Install Theme
-RUN pip install -e git+https://github.com/wprdc/ckanext-wprdctheme.git#egg=ckanext-wprdctheme
+RUN pip install -e git+https://github.com/WPRDC/ckanext-wprdctheme.git#egg=ckanext-wprdctheme
 
 # Copy custom initialization scripts
 COPY docker-entrypoint.d/* /docker-entrypoint.d/
