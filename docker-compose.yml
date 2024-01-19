@@ -13,6 +13,7 @@ services:
       dockerfile: Dockerfile
       args:
         - TZ=${TZ}
+        - CKAN_VERSION=2.10.3
     networks:
       - ckannet
       - solrnet

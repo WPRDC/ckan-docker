@@ -7,8 +7,8 @@ ARG ARCHITECTURE=x86_64-unknown-linux-gnu
 ENV ARCH=$ARCHITECTURE
 
 # Version Numbers
-ENV QSV_VERSION="0.118.0"
-ENV DPP_VERSION="0.15.0"
+ENV QSV_VERSION="0.121.0"
+ENV DPP_VERSION="0.16.1"
 
 # Set timezone
 ENV TZ="America/New_York"
@@ -49,7 +49,8 @@ RUN apt-get install --no-install-recommends -y \
     git\
     libpq-dev\
     file \
-    tzdata
+    tzdata \
+    uchardet libuchardet-dev
 
 RUN apt-get install -y postgresql-client
 #install qsv

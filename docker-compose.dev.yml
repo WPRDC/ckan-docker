@@ -13,6 +13,7 @@ services:
       dockerfile: Dockerfile.dev
       args:
         - TZ=${TZ}
+        - "CKAN_VERSION=${CKAN_VERSION}"
     env_file:
       - .env
     depends_on:
