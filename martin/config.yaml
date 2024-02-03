@@ -19,14 +19,14 @@ postgres:
   # Maximum connections pool size [default: 20]
   pool_size: 20
 
-  # Limit the number of table geo features included in a tile. Unlimited by default.
-  max_feature_count: 1000
-
   # Control the automatic generation of bounds for spatial tables [default: quick]
   # 'calc' - compute table geometry bounds on startup.
   # 'quick' - same as 'calc', but the calculation will be aborted if it takes more than 5 seconds.
   # 'skip' - do not compute table geometry bounds on startup.
-  auto_bounds: quick
+  auto_bounds: calc
+
+  minzoom: 9
+  maxzoom: 18
 
   # Enable automatic discovery of tables and functions.
   # You may set this to `false` to disable.
@@ -40,11 +40,18 @@ postgres:
     # E.g. `tables: false` enables just the functions auto-discovery.
     tables:
       # Optionally set how source ID should be generated based on the table's name, schema, and geometry column
-      source_id_format: 'table.{schema}.{table}.{column}'
+      source_id_format: 'table.{table}.{column}'
 
     functions:
       # Optionally set how source ID should be generated based on the function's name and schema
       source_id_format: '{schema}.{function}'
+
+
+# Publish MBTiles files
+mbtiles:
+  paths:
+    # scan this whole dir, matching all *.mbtiles files
+    - /tiles
 
 
 # Sprite configuration

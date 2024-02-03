@@ -4,6 +4,7 @@ volumes:
   ckan_storage:
   pg_data:
   solr_data:
+  tiles_data:
 
 services:
 
@@ -104,8 +105,10 @@ services:
       db:
         condition: service_healthy
     restart: unless-stopped
+    volumes:
+      - tiles_data:/tiles
     ports:
       - "3001:3000"
     environment:
       - "DATABASE_URL=${CKAN_DATASTORE_READ_URL}"
-      - RUST_LOG=actix_web=info,martin=debug,tokio_postgres=debug
+#      - RUST_LOG=actix_web=info,martin=debug,tokio_postgres=debug
