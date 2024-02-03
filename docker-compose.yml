@@ -3,6 +3,8 @@ version: "3"
 
 volumes:
   solr_data:
+  tiles_data:
+
 
 services:
 
@@ -84,6 +86,8 @@ services:
     networks:
       - ckannet
     restart: unless-stopped
+    volumes:
+      - /data/tiles:/tiles
     ports:
       - "0.0.0.0:${MARTIN_PORT_HOST}:3000"
     environment:
