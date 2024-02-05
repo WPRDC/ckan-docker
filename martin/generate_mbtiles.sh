@@ -6,12 +6,12 @@ NAME=$2
 echo $TABLE;
 echo $NAME;
 
-martin-cp  --output-file $TABLE.mbtiles \
+martin-cp  --output-file $NAME.mbtiles \
            --mbtiles-type normalized     \
            "--bbox=-80.37,40.20,-79.695,40.68"      \
            --concurrency 4 \
-           --min-zoom 7                  \
-           --max-zoom 20                \
+           --min-zoom 5                \
+           --max-zoom 17                \
            --source $TABLE          \
            --on-duplicate=override \
            --set-meta name=$NAME \
