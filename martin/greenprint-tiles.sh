@@ -1,4 +1,4 @@
-sh generate_mbtiles.sh 09900a13-ab5d-4e41-94f8-7e4d129e9a4c allegheny-county
+#sh generate_mbtiles.sh 09900a13-ab5d-4e41-94f8-7e4d129e9a4c allegheny-county
 sh generate_mbtiles.sh 4b16b8a5-d156-4f53-911d-493a82492244 ac-watersheds
 sh generate_mbtiles.sh b0cb0249-d1ba-45b7-9918-dc86fa8af04c municipalities
 sh generate_mbtiles.sh 4af8e160-57e9-4ebf-a501-76ca1b42fc99 neighborhood-boundaries

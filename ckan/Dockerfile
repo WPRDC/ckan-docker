@@ -53,6 +53,7 @@ RUN pip install -e git+https://github.com/WPRDC/ckanext-wprdctheme.git#egg=ckane
 
 # Copy custom initialization scripts
 COPY docker-entrypoint.d/* /docker-entrypoint.d/
+COPY allowed_functions_file.txt ${APP_DIR}/
 
 # Apply any patches needed to CKAN core or any of the built extensions (not the
 # runtime mounted ones)
