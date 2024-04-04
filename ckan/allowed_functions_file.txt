@@ -349,6 +349,7 @@ st_geographyfromtext
 st_geomcollfromtext
 st_geomfromewkb
 st_geomfromewkt
+st_geomfromgeojson
 st_geomfromgml
 st_geomfromkml
 st_geomfromtext
