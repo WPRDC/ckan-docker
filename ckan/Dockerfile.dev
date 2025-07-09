@@ -8,28 +8,52 @@ FROM ckan/ckan-dev:2.11
 #      the CKAN config file (ckan.ini) with the `ckan config-tool` command
 #
 # See README > Extending the base images for more details
-#
-# For instance:
-#
-### XLoader ###
-#RUN pip3 install -e 'git+https://github.com/ckan/ckanext-xloader.git@master#egg=ckanext-xloader' && \ 
-#    pip3 install -r ${APP_DIR}/src/ckanext-xloader/requirements.txt && \
-#    pip3 install -U requests[security]
-
-### Harvester ###
-#RUN pip3 install -e 'git+https://github.com/ckan/ckanext-harvest.git@master#egg=ckanext-harvest' && \
-#    pip3 install -r ${APP_DIR}/src/ckanext-harvest/pip-requirements.txt
-# will also require gather_consumer and fetch_consumer processes running (please see https://github.com/ckan/ckanext-harvest)
-
-### Scheming ###
-#RUN  pip3 install -e 'git+https://github.com/ckan/ckanext-scheming.git@master#egg=ckanext-scheming'
-
-### Pages ###
-#RUN  pip3 install -e git+https://github.com/ckan/ckanext-pages.git#egg=ckanext-pages
+RUN apt install python3-virtualenv python3-dev python3-pip python3-wheel build-essential libxslt1-dev libxml2-dev zlib1g-dev git libffi-dev libpq-dev uchardet
 
 ### DCAT ###
-#RUN  pip3 install -e git+https://github.com/ckan/ckanext-dcat.git@v0.0.6#egg=ckanext-dcat && \
-#     pip3 install -r https://raw.githubusercontent.com/ckan/ckanext-dcat/v0.0.6/requirements.txt
+RUN  pip3 install -e git+https://github.com/ckan/ckanext-dcat.git#egg=ckanext-dcat && \
+     pip3 install -r ${APP_DIR}/src/ckanext-dcat/requirements.txt
+
+### Hierarchy ###
+RUN pip3 install -e "git+https://github.com/davidread/ckanext-hierarchy.git#egg=ckanext-hierarchy" && \
+    pip3 install -r ${APP_DIR}/src/ckanext-hierarchy/requirements.txt
+
+### Scheming ###
+RUN  pip3 install -e 'git+https://github.com/ckan/ckanext-scheming.git@master#egg=ckanext-scheming'
+
+### PDF View ###
+RUN pip3 install ckanext-pdfview
+
+### Geoview ###
+RUN pip3 install -e git+https://github.com/ckan/ckanext-geoview.git#egg=ckanext-geoview
+
+### Office Docs ###
+RUN pip3 install -e git+https://github.com/jqnatividad/ckanext-officedocs.git#egg=ckanext-officedocs
+
+### Featured Views ###
+RUN pip3 install -e git+https://github.com/OpenGov-OpenData/ckanext-featuredviews.git#egg=ckanext-featuredviews
+
+### DataJSON ###
+RUN pip3 install -e git+https://github.com/WPRDC/ckanext-datajson.git#egg=ckanext-datajson && \
+    pip3 install -r ${APP_DIR}/src/ckanext-datajson/requirements.txt
+
+### Report ###
+RUN pip3 install -e git+https://github.com/ckan/ckanext-report.git#egg=ckanext-report
+
+### Fluent ###
+RUN pip3 install -e git+https://github.com/ckan/ckanext-fluent.git#egg=ckanext-fluent && \
+    pip3 install -r ${APP_DIR}/src/ckanext-fluent/requirements.txt
+
+### OData ###
+RUN pip install -e git+https://github.com/WPRDC/ckanext-odata.git#egg=ckanext-odata
+
+#### Dataspatial ###
+# Uncomment this if you both
+#    1. need ckanext-dataspatial in dev and
+#    2. are not developing dataspatial and therefore loading it from src
+
+#RUN pip install -e git+https://github.com/wprdc/ckanext-dataspatial.git#egg=ckanext-dataspatial && \
+#    pip3 install -r ${APP_DIR}/src/ckanext-dataspatial/requirements.txt
 
 # Clone the extension(s) your are writing for your own project in the `src` folder
 # to get them mounted in this image at runtime
@@ -37,9 +61,13 @@ FROM ckan/ckan-dev:2.11
 # Copy custom initialization scripts
 COPY --chown=ckan-sys:ckan-sys docker-entrypoint.d/* /docker-entrypoint.d/
 
+# Copy list of allowed functions for sql search
+COPY --chown=ckan-sys:ckan-sys allowed_functions_file.txt ${APP_DIR}/
+
 # Apply any patches needed to CKAN core or any of the built extensions (not the
 # runtime mounted ones)
 COPY --chown=ckan-sys:ckan-sys patches ${APP_DIR}/patches
+
 
 USER ckan
 

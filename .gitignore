@@ -8,3 +8,8 @@ _solr/schema.xml
 _src/*
 local/*
 .env
+
+.idea/
+
+src/*
+!src/.placeholder
