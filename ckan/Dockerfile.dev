@@ -8,18 +8,41 @@ FROM ckan/ckan-dev:2.11
 #      the CKAN config file (ckan.ini) with the `ckan config-tool` command
 #
 # See README > Extending the base images for more details
-RUN apt install python3-virtualenv python3-dev python3-pip python3-wheel build-essential libxslt1-dev libxml2-dev zlib1g-dev git libffi-dev libpq-dev uchardet
+
+# Install datapusher-plus requirements, including qsv
+USER root
+RUN apt update
+RUN apt install curl zip unzip python3-virtualenv python3-dev python3-pip python3-wheel build-essential libxslt1-dev libxml2-dev zlib1g-dev git libffi-dev libpq-dev uchardet --yes
+
+# Install QSV as deb pacakage - the version i was getting was behind (5.10) when 6 is out and what dpp 2.0.0 expects
+RUN apt install gnupg --yes
+RUN wget -O - https://dathere.github.io/qsv-deb-releases/qsv-deb.gpg | gpg --dearmor -o /usr/share/keyrings/qsv-deb.gpg
+RUN echo "deb [signed-by=/usr/share/keyrings/qsv-deb.gpg]  https://dathere.github.io/qsv-deb-releases ./" | tee /etc/apt/sources.list.d/qsv.list
+RUN apt update # add qsv release
+RUN apt install qsv qsv-datapusher-plus
+
+# Debugging stuff
+RUN apt install vim nano procps -y
+
+USER ckan
+
+RUN pip install --upgrade pip
+
+### Datapusher Plus ###
+# !! CURRENTLY INSTALLED MANUALLY
+RUN pip3 install -e git+https://github.com/dathere/datapusher-plus.git@2.0.0#egg=datapusher-plus && \
+    pip3 install -r  ${APP_DIR}/src/datapusher-plus/requirements.txt
+
+### Scheming ###
+RUN  pip3 install -e 'git+https://github.com/ckan/ckanext-scheming.git@master#egg=ckanext-scheming'
 
 ### DCAT ###
 RUN  pip3 install -e git+https://github.com/ckan/ckanext-dcat.git#egg=ckanext-dcat && \
      pip3 install -r ${APP_DIR}/src/ckanext-dcat/requirements.txt
 
 ### Hierarchy ###
-RUN pip3 install -e "git+https://github.com/davidread/ckanext-hierarchy.git#egg=ckanext-hierarchy" && \
-    pip3 install -r ${APP_DIR}/src/ckanext-hierarchy/requirements.txt
-
-### Scheming ###
-RUN  pip3 install -e 'git+https://github.com/ckan/ckanext-scheming.git@master#egg=ckanext-scheming'
+#RUN pip3 install -e "git+https://github.com/davidread/ckanext-hierarchy.git#egg=ckanext-hierarchy" && \
+#    pip3 install -r ${APP_DIR}/src/ckanext-hierarchy/requirements.txt
 
 ### PDF View ###
 RUN pip3 install ckanext-pdfview
@@ -34,20 +57,20 @@ RUN pip3 install -e git+https://github.com/jqnatividad/ckanext-officedocs.git#eg
 RUN pip3 install -e git+https://github.com/OpenGov-OpenData/ckanext-featuredviews.git#egg=ckanext-featuredviews
 
 ### DataJSON ###
-RUN pip3 install -e git+https://github.com/WPRDC/ckanext-datajson.git#egg=ckanext-datajson && \
+RUN pip3 install -e git+https://github.com/GSA/ckanext-datajson.git#egg=ckanext-datajson && \
     pip3 install -r ${APP_DIR}/src/ckanext-datajson/requirements.txt
 
 ### Report ###
-RUN pip3 install -e git+https://github.com/ckan/ckanext-report.git#egg=ckanext-report
+# RUN pip3 install -e git+https://github.com/ckan/ckanext-report.git#egg=ckanext-report
 
 ### Fluent ###
-RUN pip3 install -e git+https://github.com/ckan/ckanext-fluent.git#egg=ckanext-fluent && \
-    pip3 install -r ${APP_DIR}/src/ckanext-fluent/requirements.txt
+#RUN pip3 install -e git+https://github.com/ckan/ckanext-fluent.git#egg=ckanext-fluent && \
+#    pip3 install -r ${APP_DIR}/src/ckanext-fluent/requirements.txt
 
-### OData ###
-RUN pip install -e git+https://github.com/WPRDC/ckanext-odata.git#egg=ckanext-odata
+#### OData ###
+#RUN pip install -e git+https://github.com/WPRDC/ckanext-odata.git#egg=ckanext-odata
 
-#### Dataspatial ###
+### Dataspatial ###
 # Uncomment this if you both
 #    1. need ckanext-dataspatial in dev and
 #    2. are not developing dataspatial and therefore loading it from src
@@ -58,16 +81,18 @@ RUN pip install -e git+https://github.com/WPRDC/ckanext-odata.git#egg=ckanext-od
 # Clone the extension(s) your are writing for your own project in the `src` folder
 # to get them mounted in this image at runtime
 
+# Override prerun to for debugging
+COPY --chown=ckan-sys:ckan-sys setup/prerun.py.override ${APP_DIR}/prerun.py
+
 # Copy custom initialization scripts
 COPY --chown=ckan-sys:ckan-sys docker-entrypoint.d/* /docker-entrypoint.d/
 
 # Copy list of allowed functions for sql search
-COPY --chown=ckan-sys:ckan-sys allowed_functions_file.txt ${APP_DIR}/
+COPY --chown=ckan-sys:ckan-sys allowed_functions_file.txt ${APP_DIR}
 
 # Apply any patches needed to CKAN core or any of the built extensions (not the
 # runtime mounted ones)
 COPY --chown=ckan-sys:ckan-sys patches ${APP_DIR}/patches
-
 
 USER ckan
 

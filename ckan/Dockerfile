@@ -3,10 +3,32 @@ FROM ckan/ckan-base:2.11
 # Install any extensions needed by your CKAN instance
 # See Dockerfile.dev for more details and examples
 
+
+# Install datapusher-plus requirements, including qsv
+USER root
+RUN apt update
+RUN apt install curl zip unzip python3-virtualenv python3-dev python3-pip python3-wheel build-essential libxslt1-dev libxml2-dev zlib1g-dev git libffi-dev libpq-dev uchardet --yes
+
+# Install QSV as deb pacakage - the version i was getting was behind (5.10) when 6 is out and what dpp 2.0.0 expects
+RUN apt install gnupg --yes
+RUN wget -O - https://dathere.github.io/qsv-deb-releases/qsv-deb.gpg | gpg --dearmor -o /usr/share/keyrings/qsv-deb.gpg
+RUN echo "deb [signed-by=/usr/share/keyrings/qsv-deb.gpg]  https://dathere.github.io/qsv-deb-releases ./" | tee /etc/apt/sources.list.d/qsv.list
+RUN apt update # add qsv release
+RUN apt install qsv qsv-datapusher-plus
+
+USER ckan
+
+RUN pip install --upgrade pip
+
+# WPRDC-modified plugins
+
+### Datapusher Plus ###
+RUN pip3 install -e git+https://github.com/wprdc/datapusher-plus.git@main#egg=datapusher-plus && \
+    pip3 install -r  ${APP_DIR}/src/datapusher-plus/requirements.txt
+
 ### DCAT ###
 RUN  pip3 install -e git+https://github.com/ckan/ckanext-dcat.git#egg=ckanext-dcat && \
      pip3 install -r ${APP_DIR}/src/ckanext-dcat/requirements.txt
-
 
 ### Hierarchy ###
 RUN pip3 install -e "git+https://github.com/davidread/ckanext-hierarchy.git#egg=ckanext-hierarchy" && \
@@ -30,13 +52,6 @@ RUN pip3 install -e git+https://github.com/OpenGov-OpenData/ckanext-featuredview
 ### DataJSON ###
 RUN pip3 install -e git+https://github.com/WPRDC/ckanext-datajson.git#egg=ckanext-datajson && \
     pip3 install -r ${APP_DIR}/src/ckanext-datajson/requirements.txt
-
-### Report ###
-RUN pip3 install -e git+https://github.com/ckan/ckanext-report.git#egg=ckanext-report
-
-### Fluent ###
-RUN pip3 install -e git+https://github.com/ckan/ckanext-fluent.git#egg=ckanext-fluent && \
-    pip3 install -r ${APP_DIR}/src/ckanext-fluent/requirements.txt
 
 ### OData ###
 RUN pip install -e git+https://github.com/WPRDC/ckanext-odata.git#egg=ckanext-odata
