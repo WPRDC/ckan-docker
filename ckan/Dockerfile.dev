@@ -30,8 +30,8 @@ RUN pip install --upgrade pip
 
 ### Datapusher Plus ###
 # !! CURRENTLY INSTALLED MANUALLY
-RUN pip3 install -e git+https://github.com/dathere/datapusher-plus.git@2.0.0#egg=datapusher-plus && \
-    pip3 install -r  ${APP_DIR}/src/datapusher-plus/requirements.txt
+#RUN pip3 install -e git+https://github.com/dathere/datapusher-plus.git@2.0.0#egg=datapusher-plus && \
+#    pip3 install -r  ${APP_DIR}/src/datapusher-plus/requirements.txt
 
 ### Scheming ###
 RUN  pip3 install -e 'git+https://github.com/ckan/ckanext-scheming.git@master#egg=ckanext-scheming'

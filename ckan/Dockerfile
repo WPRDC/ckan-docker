@@ -30,10 +30,6 @@ RUN pip3 install -e git+https://github.com/wprdc/datapusher-plus.git@main#egg=da
 RUN  pip3 install -e git+https://github.com/ckan/ckanext-dcat.git#egg=ckanext-dcat && \
      pip3 install -r ${APP_DIR}/src/ckanext-dcat/requirements.txt
 
-### Hierarchy ###
-RUN pip3 install -e "git+https://github.com/davidread/ckanext-hierarchy.git#egg=ckanext-hierarchy" && \
-    pip3 install -r ${APP_DIR}/src/ckanext-hierarchy/requirements.txt
-
 ### Scheming ###
 RUN  pip3 install -e 'git+https://github.com/ckan/ckanext-scheming.git@master#egg=ckanext-scheming'
 
