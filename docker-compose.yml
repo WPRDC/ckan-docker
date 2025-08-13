@@ -3,21 +3,11 @@ volumes:
   solr_data:
   pip_cache:
   site_packages:
+  tiles_data:
+  home_dir:
+
 
 services:
-
-  nginx:
-    build:
-      context: nginx/
-      dockerfile: Dockerfile
-    networks:
-      - webnet
-      - ckannet
-    depends_on:
-      ckan:
-        condition: service_healthy
-    ports:
-      - "0.0.0.0:${NGINX_SSLPORT_HOST}:${NGINX_SSLPORT}"
     
   ckan:
     build:
@@ -25,18 +15,23 @@ services:
       dockerfile: Dockerfile
       args:
         - TZ=${TZ}
+    platform: linux/amd64
     networks:
       - ckannet
       - solrnet
       - redisnet
     env_file:
       - .env
+    ports:
+      - "0.0.0.0:${CKAN_PORT_HOST}:5000"
     depends_on:
       solr:
         condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
+      - home_dir:/srv/app/
+      - /data/ckan:/var/lib/ckan
       - ckan_storage:/var/lib/ckan
       - pip_cache:/root/.cache/pip
       - site_packages:/usr/lib/python3.10/site-packages
@@ -77,11 +72,11 @@ services:
       - "0.0.0.0:${MARTIN_PORT_HOST}:3000"
     environment:
       - "DATABASE_URL=${CKAN_DATASTORE_READ_URL}"
+      - "MAPS_DATABASE_URL=${MAPS_DATABASE_URL}"
     healthcheck:
       test: [ "CMD", "wget", "-qO", "/dev/null", "http://localhost:3000/solr/" ]
 
 networks:
-  webnet:
   ckannet:
   solrnet:
     internal: true

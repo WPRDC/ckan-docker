@@ -16,10 +16,6 @@ RUN echo "deb [signed-by=/usr/share/keyrings/qsv-deb.gpg]  https://dathere.githu
 RUN apt update # add qsv release
 RUN apt install qsv qsv-datapusher-plus
 
-USER ckan
-
-RUN pip install --upgrade pip
-
 # WPRDC-modified plugins
 
 ### Datapusher Plus ###
