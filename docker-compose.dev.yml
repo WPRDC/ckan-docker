@@ -6,6 +6,7 @@ volumes:
   site_packages:
   local_bin:
   home_dir:
+  tiles_data:
 
 services:
 
@@ -17,6 +18,7 @@ services:
         - TZ=${TZ}
     env_file:
       - .env
+    platform: linux/amd64
     links:
       - db
       - solr
@@ -37,15 +39,6 @@ services:
       timeout: 10s
       retries: 3
 
-  datapusher:
-    image: ckan/ckan-base-datapusher:${DATAPUSHER_VERSION}
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "-qO", "/dev/null", "http://localhost:8800"]
-      interval: 60s
-      timeout: 10s
-      retries: 3
-
   db:
     build:
       context: postgresql/
@@ -59,6 +52,9 @@ services:
       - DATASTORE_READONLY_USER
       - DATASTORE_READONLY_PASSWORD
       - DATASTORE_DB
+    ports:
+      - "${DB_PORT_HOST}:5432"
+    platform: linux/amd64
     volumes:
       - pg_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -78,3 +74,20 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "-e", "QUIT"]
+
+  tiles:
+    container_name: ${MARTIN_CONTAINER_NAME}
+    build:
+      context: martin/
+    platform: linux/amd64
+    restart: unless-stopped
+    links:
+      - db
+    volumes:
+      - tiles_data:/tiles
+    ports:
+      - "0.0.0.0:${MARTIN_PORT_HOST}:3000"
+    environment:
+      - "DATABASE_URL=${CKAN_DATASTORE_READ_URL}"
+    healthcheck:
+      test: [ "CMD", "wget", "-qO", "/dev/null", "http://0.0.0.0:3000/catalog" ]
