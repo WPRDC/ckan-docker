@@ -48,9 +48,9 @@ RUN pip3 install -e git+https://github.com/WPRDC/ckanext-datajson.git#egg=ckanex
 ### OData ###
 RUN pip install -e git+https://github.com/WPRDC/ckanext-odata.git#egg=ckanext-odata
 
-### Dataspatial ###
-RUN pip install -e git+https://github.com/WPRDC/ckanext-dataspatial.git#egg=ckanext-dataspatial && \
-    pip3 install -r ${APP_DIR}/src/ckanext-dataspatial/requirements.txt
+### SpatialData ###
+RUN pip install -e git+https://github.com/WPRDC/ckanext-spatialdata.git#egg=ckanext-spatialdata && \
+    pip3 install -r ${APP_DIR}/src/ckanext-spatialdata/requirements.txt
 
 # Install Theme
 RUN pip install -e git+https://github.com/WPRDC/ckanext-wprdctheme.git#egg=ckanext-wprdctheme
