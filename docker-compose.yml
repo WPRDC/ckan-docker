@@ -10,12 +10,12 @@ volumes:
 services:
     
   ckan:
+    platform: linux/amd64
     build:
       context: ckan/
       dockerfile: Dockerfile
       args:
         - TZ=${TZ}
-    platform: linux/amd64
     networks:
       - ckannet
       - solrnet
@@ -42,6 +42,7 @@ services:
       retries: 3
 
   solr:
+    platform: linux/amd64
     networks:
       - solrnet
     image: ckan/ckan-solr:${SOLR_IMAGE_VERSION}
