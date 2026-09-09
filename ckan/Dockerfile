@@ -1,4 +1,4 @@
-FROM ckan/ckan-base:2.11
+FROM ckan/ckan-base:2.12
 
 # Install any extensions needed by your CKAN instance
 # See Dockerfile.dev for more details and examples
@@ -7,16 +7,22 @@ FROM ckan/ckan-base:2.11
 # Install datapusher-plus requirements, including qsv
 USER root
 RUN apt update
-RUN apt install curl zip unzip python3-virtualenv python3-dev python3-pip python3-wheel build-essential libxslt1-dev libxml2-dev zlib1g-dev git libffi-dev libpq-dev uchardet --yes
+RUN apt install curl zip unzip python3-virtualenv python3-dev python3-pip python3-wheel \
+    build-essential libxslt1-dev libxml2-dev zlib1g-dev git libffi-dev libpq-dev uchardet \
+    gdal-bin libgdal-dev file gnupg --yes
 
-# Install QSV as deb pacakage - the version i was getting was behind (5.10) when 6 is out and what dpp 2.0.0 expects
-RUN apt install gnupg --yes
-RUN wget -O - https://dathere.github.io/qsv-deb-releases/qsv-deb.gpg | gpg --dearmor -o /usr/share/keyrings/qsv-deb.gpg
-RUN echo "deb [signed-by=/usr/share/keyrings/qsv-deb.gpg]  https://dathere.github.io/qsv-deb-releases ./" | tee /etc/apt/sources.list.d/qsv.list
-RUN apt update # add qsv release
-RUN apt install qsv qsv-datapusher-plus
-
-# WPRDC-modified plugins
+# qsv: DataPusher+ shells out to qsvdp for every ingest and refuses to run without it
+# (qsv_utils.py raises "not found"). The qsv-datapusher-plus deb installs to
+# /usr/local/bin/qsvdp, matching CKANEXT__DATAPUSHER_PLUS__QSV_BIN in .env. The 2.12
+# base image has no wget, so fetch the signing key with curl.
+RUN curl -fsSL https://dathere.github.io/qsv-deb-releases/qsv-deb.gpg \
+      | gpg --dearmor -o /usr/share/keyrings/qsv-deb.gpg
+RUN echo "deb [signed-by=/usr/share/keyrings/qsv-deb.gpg] https://dathere.github.io/qsv-deb-releases ./" \
+      > /etc/apt/sources.list.d/qsv.list
+RUN apt update && apt install qsv-datapusher-plus --yes
+# Fail the build now rather than at first ingest if the binary is missing or too old
+# (DataPusher+ config.py requires MINIMUM_QSV_VERSION 20.1.0).
+RUN /usr/local/bin/qsvdp --version
 
 ### Datapusher Plus ###
 RUN pip3 install -e git+https://github.com/wprdc/datapusher-plus.git@main#egg=datapusher-plus && \

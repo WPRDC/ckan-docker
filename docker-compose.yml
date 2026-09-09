@@ -5,6 +5,7 @@ volumes:
   site_packages:
   tiles_data:
   home_dir:
+  prefect_data:
 
 
 services:
@@ -22,6 +23,12 @@ services:
       - redisnet
     env_file:
       - .env
+    environment:
+      # DataPusher+ 3.x submits its ingest flow to Prefect; CKAN needs the API to
+      # create flow runs.
+      - PREFECT_API_URL=http://prefect:4200/api
+      # Default PREFECT_HOME ($APP_DIR/.prefect) is not writable by the `ckan` user.
+      - PREFECT_HOME=/tmp/prefect
     ports:
       - "0.0.0.0:${CKAN_PORT_HOST}:5000"
     depends_on:
@@ -59,6 +66,94 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "-e", "QUIT"]
+
+  # Prefect API + UI for DataPusher+ 3.x, which replaced the old RQ queue with Prefect
+  # deployments. Built from the CKAN image (not prefecthq/prefect) so the server can
+  # never drift from the client version CKAN and the worker run. State is SQLite under
+  # PREFECT_HOME; runs as root because prefect_data starts life owned by root. The UI is
+  # bound to localhost only — tunnel in, or front it with the existing reverse proxy.
+  prefect:
+    platform: linux/amd64
+    build:
+      context: ckan/
+      dockerfile: Dockerfile
+      args:
+        - TZ=${TZ}
+    user: root
+    networks:
+      - ckannet
+    environment:
+      - PREFECT_HOME=/prefect
+      - PREFECT_SERVER_API_HOST=0.0.0.0
+    command: prefect server start
+    volumes:
+      - prefect_data:/prefect
+    ports:
+      - "127.0.0.1:${PREFECT_PORT_HOST}:4200"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:4200/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  # Runs the DataPusher+ ingest flow. Must be the CKAN image, not a stock Prefect one:
+  # DPP's prefect.yaml uses a `process` work pool, so the flow executes in-process and
+  # needs CKAN, the DPP source tree, ckan.ini and qsvdp all present. Same networks as
+  # `ckan` so the datastore / solr / redis hosts resolve identically; shares home_dir
+  # with `ckan` so both read the same /srv/app/ckan.ini.
+  ckan-worker:
+    platform: linux/amd64
+    build:
+      context: ckan/
+      dockerfile: Dockerfile
+      args:
+        - TZ=${TZ}
+    networks:
+      - ckannet
+      - solrnet
+      - redisnet
+    env_file:
+      - .env
+    environment:
+      - PREFECT_API_URL=http://prefect:4200/api
+      - PREFECT_HOME=/tmp/prefect
+      # DPP's Prefect result-storage block defaults to ~/.prefect/datapusher-plus-results.
+      # $HOME is /srv/app (not writable by `ckan`), so block registration fails silently
+      # and the `with transaction():` group in prefect_flow.py can't durably commit —
+      # Prefect then rolls back the datastore write even though the run logs "JOB DONE!".
+      # Pointing HOME at world-writable /tmp lets the block register and the commit stick.
+      - HOME=/tmp
+    depends_on:
+      solr:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      prefect:
+        condition: service_healthy
+      # The real ordering guard. `ckan` writes /srv/app/ckan.ini (prerun + the
+      # /docker-entrypoint.d scripts) BEFORE uWSGI comes up, so once it reports healthy
+      # the shared ckan.ini is fully written and no longer being rewritten. Without this
+      # the worker races the image's placeholder ckan.ini that home_dir seeds in on first
+      # mount.
+      ckan:
+        condition: service_healthy
+    volumes:
+      - home_dir:/srv/app/
+      - /data/ckan:/var/lib/ckan
+      - pip_cache:/root/.cache/pip
+      - site_packages:/usr/lib/python3.10/site-packages
+    restart: unless-stopped
+    # Belt-and-suspenders for the restart-policy path (depends_on only gates `up`, not a
+    # later auto-restart): wait until the datapusher_plus config keys are present, which
+    # only 10_datapusher_plus_prep.sh writes — the placeholder ini has none. Work-pool
+    # creation and prefect-deploy are idempotent, so restarts stay clean.
+    command: >
+      bash -c 'until [ -s "$$CKAN_INI" ] && grep -q "^ckanext.datapusher_plus\." "$$CKAN_INI"; do
+      echo "waiting for a fully-written ckan.ini..."; sleep 3; done;
+      prefect work-pool create --type process datapusher-plus || true;
+      cd /srv/app/src/datapusher-plus && ckan -c "$$CKAN_INI" datapusher_plus prefect-deploy;
+      exec prefect worker start --pool datapusher-plus'
 
   tiles:
     container_name: ${MARTIN_CONTAINER_NAME}
