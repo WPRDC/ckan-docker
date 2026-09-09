@@ -5,7 +5,6 @@ volumes:
   site_packages:
   tiles_data:
   home_dir:
-  prefect_data:
 
 
 services:
@@ -40,10 +39,11 @@ services:
       - home_dir:/srv/app/
       - /data/ckan:/var/lib/ckan
       - pip_cache:/root/.cache/pip
-      - site_packages:/usr/lib/python3.10/site-packages
+      - site_packages:/usr/local/lib/python3.14/site-packages
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO", "/dev/null", "http://localhost:5000/api/action/status_show"]
+      # the ckan-base 2.12 image (python3.14) ships curl, not wget
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:5000/api/action/status_show"]
       interval: 60s
       timeout: 10s
       retries: 3
@@ -69,9 +69,17 @@ services:
 
   # Prefect API + UI for DataPusher+ 3.x, which replaced the old RQ queue with Prefect
   # deployments. Built from the CKAN image (not prefecthq/prefect) so the server can
-  # never drift from the client version CKAN and the worker run. State is SQLite under
-  # PREFECT_HOME; runs as root because prefect_data starts life owned by root. The UI is
-  # bound to localhost only — tunnel in, or front it with the existing reverse proxy.
+  # never drift from the client version CKAN and the worker run. The UI is bound to
+  # localhost only — tunnel in, or front it with the existing reverse proxy.
+  #
+  # Orchestration state lives in Postgres, not the default SQLite under PREFECT_HOME:
+  # `prefect server start` runs several background writer-services and the DataPusher+
+  # worker polls the pool, so concurrent writes to one SQLite file throw
+  # "database is locked". Point PREFECT_DATABASE_URL at a `prefect` database on the same
+  # Postgres CKAN uses (create it once: CREATE DATABASE prefect; Prefect migrates on
+  # start). Still runs as root so `prefect server start` can unpack its bundled UI into
+  # site-packages; PREFECT_HOME stays a writable in-container path for its profile /
+  # block-registration memo (no DB there anymore), so the prefect_data volume is gone.
   prefect:
     platform: linux/amd64
     build:
@@ -83,11 +91,13 @@ services:
     networks:
       - ckannet
     environment:
-      - PREFECT_HOME=/prefect
+      - PREFECT_SERVER_DATABASE_CONNECTION_URL=${PREFECT_DATABASE_URL}
       - PREFECT_SERVER_API_HOST=0.0.0.0
+      - PREFECT_HOME=/root/.prefect
+      # address the browser uses for API calls when the UI is reached on the published
+      # port; change it if you front the UI with a reverse proxy at another hostname
+      - PREFECT_UI_API_URL=http://localhost:${PREFECT_PORT_HOST}/api
     command: prefect server start
-    volumes:
-      - prefect_data:/prefect
     ports:
       - "127.0.0.1:${PREFECT_PORT_HOST}:4200"
     restart: unless-stopped
@@ -142,7 +152,7 @@ services:
       - home_dir:/srv/app/
       - /data/ckan:/var/lib/ckan
       - pip_cache:/root/.cache/pip
-      - site_packages:/usr/lib/python3.10/site-packages
+      - site_packages:/usr/local/lib/python3.14/site-packages
     restart: unless-stopped
     # Belt-and-suspenders for the restart-policy path (depends_on only gates `up`, not a
     # later auto-restart): wait until the datapusher_plus config keys are present, which
