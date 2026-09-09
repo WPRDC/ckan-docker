@@ -12,6 +12,7 @@ local/*
 .env
 
 .idea/
+.claude/
 
 src/*
 !src/.placeholder
