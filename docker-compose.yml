@@ -165,6 +165,7 @@ services:
       cd /srv/app/src/datapusher-plus && ckan -c "$$CKAN_INI" datapusher_plus prefect-deploy;
       exec prefect worker start --pool datapusher-plus'
 
+
   tiles:
     container_name: ${MARTIN_CONTAINER_NAME}
     build:
@@ -179,7 +180,7 @@ services:
       - "DATABASE_URL=${CKAN_DATASTORE_READ_URL}"
       - "MAPS_DATABASE_URL=${MAPS_DATABASE_URL}"
     healthcheck:
-      test: [ "CMD", "wget", "-qO", "/dev/null", "http://localhost:3000/solr/" ]
+      test: [ "CMD", "wget", "-qO", "/dev/null", "http://localhost:3000/catalog" ]
 
 networks:
   ckannet:

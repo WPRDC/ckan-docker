@@ -50,6 +50,10 @@ RUN pip3 install -e git+https://github.com/OpenGov-OpenData/ckanext-featuredview
 ### DataJSON ###
 RUN pip3 install -e git+https://github.com/WPRDC/ckanext-datajson.git#egg=ckanext-datajson && \
     pip3 install -r ${APP_DIR}/src/ckanext-datajson/requirements.txt
+# ckanext-datajson pins jsonschema==2.4.0 (Draft3/4 only); the Prefect server, built from
+# this same image, needs jsonschema>=4.18 for Draft202012Validator or it crashes on import.
+# Mirrors the same line in Dockerfile.dev.
+RUN pip3 install 'jsonschema>=4.18,<5'
 
 ### OData ###
 RUN pip install -e git+https://github.com/WPRDC/ckanext-odata.git#egg=ckanext-odata
