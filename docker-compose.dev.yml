@@ -203,13 +203,12 @@ services:
       context: martin/
     platform: linux/amd64
     restart: unless-stopped
-    links:
-      - db
     volumes:
       - tiles_data:/tiles
     ports:
       - "0.0.0.0:${MARTIN_PORT_HOST}:3000"
     environment:
       - "DATABASE_URL=${CKAN_DATASTORE_READ_URL}"
+      - "MAPS_DATABASE_URL=${MAPS_DATABASE_URL}"
     healthcheck:
-      test: [ "CMD", "wget", "-qO", "/dev/null", "http://0.0.0.0:3000/catalog" ]
+      test: [ "CMD", "wget", "-qO", "/dev/null", "http://localhost:3000/catalog" ]
