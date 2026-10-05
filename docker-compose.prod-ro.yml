@@ -1,0 +1,31 @@
+# READ-ONLY-against-live-prod layer. Use with docker-compose.yml + .env.prod-ro:
+#
+#   docker compose -p ckan-prodro \
+#     -f docker-compose.yml -f docker-compose.prod-ro.yml \
+#     --env-file .env.prod-ro up -d ckan
+#
+# Only `ckan` (plus its solr/redis deps) is meant to run. prefect / ckan-worker /
+# tiles are left un-started -- they need writable databases.
+#
+# Guardrails added here on top of .env.prod-ro:
+#   * MAINTENANCE_MODE=true          -> prerun.py does no db init/upgrade, no
+#                                       `datastore set-permissions`, no sysadmin write.
+#   * tmpfs over /docker-entrypoint.d -> the datapusher_plus prep + API-token-minting
+#                                       scripts don't run (the token one would attempt
+#                                       a DB write).
+#   * /data/ckan bind mount          -> named volume (host path doesn't exist here).
+
+volumes:
+  ckan_data:
+
+services:
+  ckan:
+    env_file:
+      - .env
+      - .env.prod-ro
+    environment:
+      - MAINTENANCE_MODE=true
+    tmpfs:
+      - /docker-entrypoint.d
+    volumes:
+      - ckan_data:/var/lib/ckan
