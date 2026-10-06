@@ -40,6 +40,11 @@ services:
       - /data/ckan:/var/lib/ckan
       - pip_cache:/root/.cache/pip
       - site_packages:/usr/local/lib/python3.14/site-packages
+    # Built JS/CSS bundles are regenerated at startup. Keep them off the persistent
+    # /data/ckan bind mount: a stale bundle there survives image rebuilds and kept
+    # serving the old htmx after the 2.12 upgrade. Rebuilt from the image on each start.
+    tmpfs:
+      - /var/lib/ckan/webassets:mode=1777,size=128m
     restart: unless-stopped
     healthcheck:
       # the ckan-base 2.12 image (python3.14) ships curl, not wget
