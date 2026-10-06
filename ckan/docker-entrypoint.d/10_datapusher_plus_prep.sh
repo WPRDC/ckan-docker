@@ -3,10 +3,13 @@
 
 # as of 2025-08-05, datapusher-plus attempts to configure before env vars are set
 # in order to get around this, we manually set the relevant vars during init
+# NB: deliberately does NOT write ckanext.datapusher_plus.download_proxy. DPP enables
+# proxying purely from that key being present (config.py: USE_PROXY = "...download_proxy"
+# in tk.config), so writing it with an empty value turns proxying on with an empty proxy
+# and every download fails. Leave it absent unless there is a real proxy to point at.
 ckan config-tool $CKAN_INI \
   "ckan.datastore.write_url=$CKAN_DATASTORE_WRITE_URL" \
-  "ckanext.datapusher_plus.use_proxy=$CKANEXT__DATAPUSHER_PLUS__USE_PROXY" \
-  "ckanext.datapusher_plus.download_proxy=$CKANEXT__DATAPUSHER_PLUS__DOWNLOAD_PROXY" \
+  "ckan.datastore.read_url=$CKAN_DATASTORE_READ_URL" \
   "ckanext.datapusher_plus.ssl_verify=$CKANEXT__DATAPUSHER_PLUS__SSL_VERIFY" \
   "ckanext.datapusher_plus.upload_log_level=$CKANEXT__DATAPUSHER_PLUS__UPLOAD_LOG_LEVEL" \
   "ckanext.datapusher_plus.pii_screening=$CKANEXT__DATAPUSHER_PLUS__PII_SCREENING" \
@@ -43,4 +46,4 @@ ckan config-tool $CKAN_INI \
   "ckanext.datapusher_plus.latitude_fields=$CKANEXT__DATAPUSHER_PLUS__LATITUDE_FIELDS" \
   "ckanext.datapusher_plus.longitude_fields=$CKANEXT__DATAPUSHER_PLUS__LONGITUDE_FIELDS" \
   "ckanext.datapusher_plus.jinja2_bytecode_cache_dir=$CKANEXT__DATAPUSHER_PLUS__JINJA2_BYTECODE_CACHE_DIR" \
-  "ckanext.datapusher_plus.auto_unzip_one_file=$CKANEXT__DATAPUSHER_PLUS__AUTO_UNZIP_ONE_FILE" \
+  "ckanext.datapusher_plus.auto_unzip_one_file=$CKANEXT__DATAPUSHER_PLUS__AUTO_UNZIP_ONE_FILE"

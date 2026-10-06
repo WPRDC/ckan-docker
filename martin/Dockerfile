@@ -1,4 +1,5 @@
-FROM ghcr.io/maplibre/martin
+# Pinned: an unpinned rebuild during the 2.12 cutover jumped versions and changed CORS behavior.
+FROM ghcr.io/maplibre/martin:1.16.1
 
 COPY config.yaml .
 

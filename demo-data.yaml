@@ -1,0 +1,29 @@
+# Landing-zone manifest for local development data.
+#
+# `bin/pull_demo_data` reads this file and clones the listed datasets from
+# `source` (a real CKAN instance) into demo-data/ -- metadata, files, and
+# datastore dumps. That pull hits the network and only needs to happen once
+# (or whenever you want fresher data); after that, `bin/load_demo_data`
+# replays demo-data/ into whatever local CKAN you currently have, entirely
+# offline, as many times as you like (e.g. every time you tear down and
+# rebuild the stack).
+#
+# Only `slug` is required per dataset. `row_limit`, `skip_formats`,
+# `exclude_resources` and `fetch_external_links` all fall back to the
+# `defaults` block below and can be overridden per dataset.
+
+source: https://data.wprdc.org
+
+defaults:
+  row_limit: null              # null = no cap; pull every datastore row
+  skip_formats: []             # e.g. [PNG] to skip large preview images
+  exclude_resources: []        # resource names to skip entirely
+  fetch_external_links: false  # plain link resources: record the URL only by default
+
+datasets:
+  - slug: temperature-inversions
+
+  - slug: pittsburgh-311-data
+    row_limit: null           # ~966k rows in the real thing; cap it for a fast local rebuild
+    exclude_resources:
+      - 311 Data Dictionary
