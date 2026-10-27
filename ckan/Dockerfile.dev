@@ -38,6 +38,11 @@ RUN pip install --upgrade pip
 ### Datapusher Plus ###
 RUN pip3 install -e git+https://github.com/wprdc/datapusher-plus.git@main#egg=datapusher-plus && \
     pip3 install -r  ${APP_DIR}/src/datapusher-plus/requirements.txt
+# DPP pins prefect<3.8, and prefect 3.7.8 allows fastapi<1.0, but fastapi 0.141 dropped
+# Body(min_items=...), which prefect's server still uses: `prefect server start` dies
+# with "Body() got an unexpected keyword argument 'min_items'". Hold fastapi back until
+# DPP moves to a prefect that no longer passes it.
+RUN pip3 install 'fastapi>=0.139,<0.141'
 
 ### DCAT ###
 RUN  pip3 install -e git+https://github.com/ckan/ckanext-dcat.git#egg=ckanext-dcat && \
