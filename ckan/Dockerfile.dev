@@ -33,7 +33,9 @@ RUN /usr/local/bin/qsvdp --version
 # Debugging stuff
 RUN apt install vim nano procps -y
 
-RUN pip install --upgrade pip
+# eMudhra/emSign CA incident (Oct 2026): see the matching block in Dockerfile.
+RUN apt update && apt install --only-upgrade ca-certificates --yes && update-ca-certificates
+RUN pip3 install --upgrade 'pip>=26.2.2' 'certifi>=2026.10.19'
 
 ### Datapusher Plus ###
 RUN pip3 install -e git+https://github.com/wprdc/datapusher-plus.git@main#egg=datapusher-plus && \
@@ -113,6 +115,14 @@ COPY --chown=ckan-sys:ckan-sys patches ${APP_DIR}/patches
 # The 2.12 dev image ships test-core.ini as ckan-sys:ckan-sys 0644, but
 # start_ckan_development.sh rewrites it as the `ckan` user -> PermissionError.
 RUN chown ckan:ckan-sys ${SRC_DIR}/ckan/test-core.ini
+
+# Fail the build if any extension's requirements dragged pip or certifi back below the
+# emSign-fixed versions (CKAN core itself pins certifi==2026.6.17).
+RUN pip3 install --upgrade 'pip>=26.2.2' 'certifi>=2026.10.19' && \
+    python3 -c "import certifi, pip; from pip._vendor.packaging.version import Version as V; \
+assert V(pip.__version__) >= V('26.2.2'), pip.__version__; \
+assert V(certifi.__version__) >= V('2026.10.19'), certifi.__version__; \
+print('pip', pip.__version__, 'certifi', certifi.__version__)"
 
 USER ckan
 

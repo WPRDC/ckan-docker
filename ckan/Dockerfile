@@ -24,6 +24,14 @@ RUN apt update && apt install qsv-datapusher-plus --yes
 # (DataPusher+ config.py requires MINIMUM_QSV_VERSION 20.1.0).
 RUN /usr/local/bin/qsvdp --version
 
+# eMudhra/emSign CA incident (Oct 2026): the compromised roots must be distrusted in both
+# the OS store and Python's. pip always trusts its vendored certifi on top of the system
+# store, so anything below pip 26.2.2 keeps trusting them. Upgrade before any other pip
+# install so the downloads below already use the clean bundle.
+# https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576
+RUN apt update && apt install --only-upgrade ca-certificates --yes && update-ca-certificates
+RUN pip3 install --upgrade 'pip>=26.2.2' 'certifi>=2026.10.19'
+
 ### Datapusher Plus ###
 RUN pip3 install -e git+https://github.com/wprdc/datapusher-plus.git@main#egg=datapusher-plus && \
     pip3 install -r  ${APP_DIR}/src/datapusher-plus/requirements.txt
@@ -69,6 +77,14 @@ RUN pip install -e git+https://github.com/WPRDC/ckanext-spatialdata.git#egg=ckan
 
 # Install Theme
 RUN pip install -e git+https://github.com/WPRDC/ckanext-wprdctheme.git#egg=ckanext-wprdctheme
+
+# Fail the build if any extension's requirements dragged pip or certifi back below the
+# emSign-fixed versions (CKAN core itself pins certifi==2026.6.17).
+RUN pip3 install --upgrade 'pip>=26.2.2' 'certifi>=2026.10.19' && \
+    python3 -c "import certifi, pip; from pip._vendor.packaging.version import Version as V; \
+assert V(pip.__version__) >= V('26.2.2'), pip.__version__; \
+assert V(certifi.__version__) >= V('2026.10.19'), certifi.__version__; \
+print('pip', pip.__version__, 'certifi', certifi.__version__)"
 
 # Copy custom initialization scripts
 COPY --chown=ckan-sys:ckan-sys docker-entrypoint.d/* /docker-entrypoint.d/
