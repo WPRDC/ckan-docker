@@ -47,3 +47,10 @@ ckan config-tool $CKAN_INI \
   "ckanext.datapusher_plus.longitude_fields=$CKANEXT__DATAPUSHER_PLUS__LONGITUDE_FIELDS" \
   "ckanext.datapusher_plus.jinja2_bytecode_cache_dir=$CKANEXT__DATAPUSHER_PLUS__JINJA2_BYTECODE_CACHE_DIR" \
   "ckanext.datapusher_plus.auto_unzip_one_file=$CKANEXT__DATAPUSHER_PLUS__AUTO_UNZIP_ONE_FILE"
+
+# type_mapping is parsed with json.loads at import, so an empty value would crash DPP.
+# Only write it when set; otherwise DPP falls back to its built-in default.
+if [ -n "${CKANEXT__DATAPUSHER_PLUS__TYPE_MAPPING:-}" ]; then
+  ckan config-tool $CKAN_INI \
+    "ckanext.datapusher_plus.type_mapping=$CKANEXT__DATAPUSHER_PLUS__TYPE_MAPPING"
+fi
