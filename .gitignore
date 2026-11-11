@@ -1,15 +1,27 @@
 # generic
 .DS_Store
 .vagrant
+__pycache__/
+*.pyc
 
 # code & config
 _service-provider/*
 _solr/schema.xml
 _src/*
 local/*
-.env
+.env*
+!.env.example
 
 .idea/
+.claude/
 
 src/*
 !src/.placeholder
+
+# demo-data landing zone payload (see demo-data.yaml, bin/pull_demo_data).
+# demo-data.yaml itself stays tracked; the pulled files do not. The
+# placeholder keeps the directory present after a fresh clone -- it's
+# bind-mounted into ckan-dev, and Docker will create it root-owned on
+# first `up` if it doesn't already exist on the host.
+demo-data/*
+!demo-data/.placeholder

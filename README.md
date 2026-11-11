@@ -35,7 +35,9 @@ The CKAN images used are from the official CKAN [ckan-docker](https://github.com
 
 The non-CKAN images are as follows:
 
-* DataPusher: CKAN's [pre-configured DataPusher image](https://github.com/ckan/ckan-docker-base/tree/main/datapusher).
+* Prefect: Prefect server (built from the CKAN image) that orchestrates DataPusher+ ingest jobs. UI/API on `PREFECT_PORT_HOST` (port 4200 in the container).
+* ckan-worker: Prefect worker (also built from the CKAN image) that runs the DataPusher+ ingest flow in the `datapusher-plus` work pool.
+* Martin tiles (`tiles`): [Martin](https://github.com/maplibre/martin) vector tile server, built from `martin/`. Tiles are stored in the `tiles_data` volume and served on `MARTIN_PORT_HOST` (port 3000 in the container).
 * PostgreSQL: Official PostgreSQL image. Database files are stored in a named volume.
 * Solr: CKAN's [pre-configured Solr image](https://github.com/ckan/ckan-solr). Index data is stored in a named volume.
 * Redis: standard Redis image
@@ -79,7 +81,7 @@ This will start up the containers in the current window. By default the containe
 using a different colour. You could also use the -d "detach mode" option ie: `docker compose up -d` if you wished to use the current
 window for something else.
 
-At the end of the container start sequence there should be 6 containers running:
+At the end of the container start sequence the following containers should be running (the exact set, names and images depend on your compose file and `.env`; `ckan-worker`, `prefect` and `tiles` are also started):
 
 ```bash
 $ docker compose ps
@@ -107,6 +109,8 @@ dev script | description
 `bin/compose …` | dev docker compose commands
 `bin/generate_extension` | generate extension in `src` directory
 `bin/install_src` | install all extensions from `src` directory (ckan-dev does not need to be running)
+`bin/load_demo_data` | load the demo organizations, groups and datasets from `demo-data/` into CKAN (runs `scripts/demo_data/load.py` in ckan-dev)
+`bin/pull_demo_data` | pull demo data from a CKAN instance into `demo-data/` (runs `scripts/demo_data/pull.py` in ckan-dev; see `demo-data.yaml`)
 `bin/reload` | reload ckan within the ckan-dev container without restarting
 `bin/restart` | shut down and restart the whole ckan-dev container (use `bin/compose up -d` instead to reload new values from .env)
 `bin/shell` | exec bash prompt within the ckan-dev container
@@ -310,8 +314,17 @@ command: `python -m pdb /usr/lib/ckan/venv/bin/ckan --config /srv/app/ckan.ini r
 
 ## 7. Datastore and datapusher
 
-The Datastore database and user is created as part of the entrypoint scripts for the db container. There is also a Datapusher container
-running the latest version of Datapusher.
+The Datastore database and user is created as part of the entrypoint scripts for the db container. Data ingest into the Datastore
+is handled by [DataPusher+](https://github.com/dathere/datapusher-plus), which runs as a Prefect flow: the `prefect` service hosts the
+server and UI, and the `ckan-worker` service (built from the CKAN image) registers the flow with `ckan datapusher_plus prefect-deploy`
+and executes jobs from the `datapusher-plus` work pool.
+
+## Vector tiles (Martin)
+
+The `tiles` service runs Martin to serve vector tiles from the Datastore (read-only connection `CKAN_DATASTORE_READ_URL`) and from
+`MAPS_DATABASE_URL`. Configuration is in `martin/config.yaml`; the helper scripts `martin/generate_mbtiles.sh` and
+`martin/greenprint-tiles.sh` build tile sets into the `tiles_data` volume. The Martin catalog is available at
+`http://localhost:${MARTIN_PORT_HOST}/catalog`.
 
 ## 8. NGINX
 

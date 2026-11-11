@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -e
+ROOT="$(dirname ${BASH_SOURCE[0]})/.."
+
+docker compose -f "${ROOT}/docker-compose.dev.yml" exec ckan-dev \
+	python3 /srv/app/scripts/demo_data/load.py "$@"

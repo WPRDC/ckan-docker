@@ -1,4 +1,4 @@
-FROM ckan/ckan-base:2.11
+FROM ckan/ckan-base:2.12
 
 # Install any extensions needed by your CKAN instance
 # See Dockerfile.dev for more details and examples
@@ -7,20 +7,39 @@ FROM ckan/ckan-base:2.11
 # Install datapusher-plus requirements, including qsv
 USER root
 RUN apt update
-RUN apt install curl zip unzip python3-virtualenv python3-dev python3-pip python3-wheel build-essential libxslt1-dev libxml2-dev zlib1g-dev git libffi-dev libpq-dev uchardet --yes
+RUN apt install curl zip unzip python3-virtualenv python3-dev python3-pip python3-wheel \
+    build-essential libxslt1-dev libxml2-dev zlib1g-dev git libffi-dev libpq-dev uchardet \
+    gdal-bin libgdal-dev file gnupg --yes
 
-# Install QSV as deb pacakage - the version i was getting was behind (5.10) when 6 is out and what dpp 2.0.0 expects
-RUN apt install gnupg --yes
-RUN wget -O - https://dathere.github.io/qsv-deb-releases/qsv-deb.gpg | gpg --dearmor -o /usr/share/keyrings/qsv-deb.gpg
-RUN echo "deb [signed-by=/usr/share/keyrings/qsv-deb.gpg]  https://dathere.github.io/qsv-deb-releases ./" | tee /etc/apt/sources.list.d/qsv.list
-RUN apt update # add qsv release
-RUN apt install qsv qsv-datapusher-plus
+# qsv: DataPusher+ shells out to qsvdp for every ingest and refuses to run without it
+# (qsv_utils.py raises "not found"). The qsv-datapusher-plus deb installs to
+# /usr/local/bin/qsvdp, matching CKANEXT__DATAPUSHER_PLUS__QSV_BIN in .env. The 2.12
+# base image has no wget, so fetch the signing key with curl.
+RUN curl -fsSL https://dathere.github.io/qsv-deb-releases/qsv-deb.gpg \
+      | gpg --dearmor -o /usr/share/keyrings/qsv-deb.gpg
+RUN echo "deb [signed-by=/usr/share/keyrings/qsv-deb.gpg] https://dathere.github.io/qsv-deb-releases ./" \
+      > /etc/apt/sources.list.d/qsv.list
+RUN apt update && apt install qsv-datapusher-plus --yes
+# Fail the build now rather than at first ingest if the binary is missing or too old
+# (DataPusher+ config.py requires MINIMUM_QSV_VERSION 20.1.0).
+RUN /usr/local/bin/qsvdp --version
 
-# WPRDC-modified plugins
+# eMudhra/emSign CA incident (Oct 2026): the compromised roots must be distrusted in both
+# the OS store and Python's. pip always trusts its vendored certifi on top of the system
+# store, so anything below pip 26.2.2 keeps trusting them. Upgrade before any other pip
+# install so the downloads below already use the clean bundle.
+# https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576
+RUN apt update && apt install --only-upgrade ca-certificates --yes && update-ca-certificates
+RUN pip3 install --upgrade 'pip>=26.2.2' 'certifi>=2026.10.19'
 
 ### Datapusher Plus ###
 RUN pip3 install -e git+https://github.com/wprdc/datapusher-plus.git@main#egg=datapusher-plus && \
     pip3 install -r  ${APP_DIR}/src/datapusher-plus/requirements.txt
+# DPP pins prefect<3.8, and prefect 3.7.8 allows fastapi<1.0, but fastapi 0.141 dropped
+# Body(min_items=...), which prefect's server still uses: `prefect server start` dies
+# with "Body() got an unexpected keyword argument 'min_items'". Hold fastapi back until
+# DPP moves to a prefect that no longer passes it.
+RUN pip3 install 'fastapi>=0.139,<0.141'
 
 ### DCAT ###
 RUN  pip3 install -e git+https://github.com/ckan/ckanext-dcat.git#egg=ckanext-dcat && \
@@ -44,6 +63,10 @@ RUN pip3 install -e git+https://github.com/OpenGov-OpenData/ckanext-featuredview
 ### DataJSON ###
 RUN pip3 install -e git+https://github.com/WPRDC/ckanext-datajson.git#egg=ckanext-datajson && \
     pip3 install -r ${APP_DIR}/src/ckanext-datajson/requirements.txt
+# ckanext-datajson pins jsonschema==2.4.0 (Draft3/4 only); the Prefect server, built from
+# this same image, needs jsonschema>=4.18 for Draft202012Validator or it crashes on import.
+# Mirrors the same line in Dockerfile.dev.
+RUN pip3 install 'jsonschema>=4.18,<5'
 
 ### OData ###
 RUN pip install -e git+https://github.com/WPRDC/ckanext-odata.git#egg=ckanext-odata
@@ -54,6 +77,14 @@ RUN pip install -e git+https://github.com/WPRDC/ckanext-spatialdata.git#egg=ckan
 
 # Install Theme
 RUN pip install -e git+https://github.com/WPRDC/ckanext-wprdctheme.git#egg=ckanext-wprdctheme
+
+# Fail the build if any extension's requirements dragged pip or certifi back below the
+# emSign-fixed versions (CKAN core itself pins certifi==2026.6.17).
+RUN pip3 install --upgrade 'pip>=26.2.2' 'certifi>=2026.10.19' && \
+    python3 -c "import certifi, pip; from pip._vendor.packaging.version import Version as V; \
+assert V(pip.__version__) >= V('26.2.2'), pip.__version__; \
+assert V(certifi.__version__) >= V('2026.10.19'), certifi.__version__; \
+print('pip', pip.__version__, 'certifi', certifi.__version__)"
 
 # Copy custom initialization scripts
 COPY --chown=ckan-sys:ckan-sys docker-entrypoint.d/* /docker-entrypoint.d/
